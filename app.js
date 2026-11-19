@@ -28,7 +28,8 @@ const ls = {
   set(k, v) { localStorage.setItem("nv." + k, JSON.stringify(v)); },
 };
 
-const DEFAULT_STYLE = { fs: 18, lh: 1.8, ls: 0, mg: 20, theme: "light", font: "sans", zone: 30 };
+const DEFAULT_STYLE = { fs: 18, lh: 1.8, ls: 0, mg: 20, theme: "light", font: "sans", zone: 30,
+                        swipe: "on", swipeDir: "book" };   // 밀어서 넘기기, book = 왼쪽으로 밀면 다음
 let style = Object.assign({}, DEFAULT_STYLE, ls.get("style", {}));
 // books: {책ID: {pos, updated, bookmarks, bm_updated, dirty}}, lib: 마지막으로 받은 library.json(오프라인 목록용)
 let state = Object.assign({ books: {}, lib: null, lastSync: 0 }, ls.get("state", {}));
@@ -658,7 +659,30 @@ function page(d) {
   textEl.scrollTop += d * Math.max(lineHeightPx(), textEl.clientHeight - lineHeightPx() * 1.2);
 }
 
+// 밀어서 넘기기: 옆으로 확실히 민 것만(위아래는 그대로 스크롤). 손이 어느 쪽이든 화면 어디서나.
+let touch0 = null;
+let swiped = false;
+textEl.addEventListener("touchstart", (ev) => {
+  const t = ev.touches[0];
+  touch0 = ev.touches.length === 1 ? { x: t.clientX, y: t.clientY, at: now() } : null;
+}, { passive: true });
+textEl.addEventListener("touchend", (ev) => {
+  const s = touch0;
+  touch0 = null;
+  if (!s || style.swipe !== "on" || !cur || String(window.getSelection() || "").length) return;
+  const t = ev.changedTouches[0];
+  const dx = t.clientX - s.x, dy = t.clientY - s.y;
+  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5 || now() - s.at > 1000) return;
+  swiped = true;                                   // 뒤따르는 '탭'(click)은 넘기기로 쓰지 않는다
+  setTimeout(() => { swiped = false; }, 400);
+  if (!$("#top").hidden) hideBars();
+  const next = style.swipeDir === "book" ? dx < 0 : dx > 0;
+  page(next ? 1 : -1);
+}, { passive: true });
+textEl.addEventListener("touchcancel", () => { touch0 = null; }, { passive: true });
+
 textEl.addEventListener("click", (ev) => {
+  if (swiped) { swiped = false; return; }
   if (String(window.getSelection() || "").length) return;    // 글을 고른 것
   if (!$("#top").hidden) { hideBars(); return; }
   const w = textEl.clientWidth;
@@ -804,6 +828,8 @@ function openStyle() {
   num("자간", "ls", 0.02, -0.1, 0.4, (x) => x.toFixed(2));
   num("여백", "mg", 4, 4, 60, (x) => x + "px");
   num("탭 영역", "zone", 5, 10, 45, (x) => x + "%");
+  pick("밀어서 넘기기", "swipe", [["on", "켜기"], ["off", "끄기"]]);
+  pick("미는 방향", "swipeDir", [["book", "← 다음"], ["reverse", "→ 다음"]]);
   pick("테마", "theme", [["light", "밝게"], ["sepia", "세피아"], ["dark", "어둡게"], ["green", "녹색"]]);
   pick("글꼴", "font", [["sans", "고딕"], ["serif", "명조"]]);
   const reset = document.createElement("button");
