@@ -14,8 +14,8 @@ const CFG = Object.assign({}, window.NV_CONFIG || {}, window.NV_TEST || {});
 const SCOPE = "https://www.googleapis.com/auth/drive.appdata";
 const API = CFG.api || "https://www.googleapis.com/drive/v3";
 const UPLOAD = CFG.upload || "https://www.googleapis.com/upload/drive/v3";
-const PUSH_DELAY = CFG.pushDelay ?? 4000;
-const POLL = CFG.poll ?? 120000;
+const PUSH_DELAY = CFG.pushDelay ?? 2000;   // 읽은 뒤 올리기
+const POLL = CFG.poll ?? 30000;             // 켜 둔 동안 PC 위치 확인
 const CHUNK_LINES = 150;
 
 const $ = (s) => document.querySelector(s);
