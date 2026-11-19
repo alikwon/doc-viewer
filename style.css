@@ -1,0 +1,75 @@
+:root {
+  --bg: #f7f7f5; --fg: #222; --muted: #888; --line: rgba(0,0,0,.09); --accent: #1f5fbf; --sheet: #fff;
+  --fs: 18px; --lh: 1.8; --ls: 0em; --mg: 20px; --font: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+body.sepia { --bg: #f4ecd8; --fg: #5b4636; --line: rgba(91,70,54,.15); --sheet: #fbf5e6; }
+body.dark  { --bg: #1e1e1e; --fg: #d4d4d4; --muted: #888; --line: rgba(255,255,255,.1); --accent: #6ea8ff; --sheet: #2a2a2a; }
+body.green { --bg: #c7edcc; --fg: #2b3a2b; --line: rgba(0,0,0,.1); --sheet: #dff5e2; }
+body.serif { --font: "Noto Serif KR", "Batang", serif; }
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); }
+body { font-family: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif; overscroll-behavior: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 8px 12px; border-radius: 8px; }
+button:active { background: var(--line); }
+button.primary { background: var(--accent); color: #fff; }
+button.icon { font-size: 20px; min-width: 44px; min-height: 44px; }
+.muted { color: var(--muted); }
+.center { text-align: center; }
+.grow { flex: 1; }
+.ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+[hidden] { display: none !important; }
+
+.view { position: fixed; inset: 0; display: flex; flex-direction: column; }
+.bar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; padding-top: max(6px, env(safe-area-inset-top)); }
+.bar h1 { font-size: 20px; margin: 0 8px; }
+
+/* 서재 */
+#library { overflow-y: auto; }
+.notice { margin: 8px 16px; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.notice p { margin: 0 0 10px; line-height: 1.5; }
+#books { list-style: none; margin: 0; padding: 0 8px; }
+#books li { padding: 14px 10px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; align-items: center; }
+#books li:active { background: var(--line); }
+#books .t { font-size: 17px; margin-bottom: 4px; word-break: break-all; }
+#books .s { font-size: 13px; color: var(--muted); }
+#books .p { font-size: 15px; font-variant-numeric: tabular-nums; }
+#lib-status { padding: 12px 18px 24px; font-size: 13px; }
+#empty { margin-top: 60px; line-height: 1.7; }
+
+/* 읽기 */
+#text {
+  flex: 1; overflow-y: auto; padding: calc(var(--mg) * .6) var(--mg); outline: none;
+  font-family: var(--font); font-size: var(--fs); line-height: var(--lh); letter-spacing: var(--ls);
+  -webkit-user-select: text; user-select: text;
+}
+.chunk { white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere;
+         content-visibility: auto; contain-intrinsic-size: auto 4000px; }
+.overlay { position: absolute; left: 0; right: 0; background: var(--sheet); box-shadow: 0 0 12px rgba(0,0,0,.15); z-index: 5; }
+#top { top: 0; }
+#bottom { bottom: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); gap: 12px; padding-left: 16px; padding-right: 16px; }
+#seek { flex: 1; accent-color: var(--accent); }
+#pct { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
+#loading { position: absolute; inset: 40% 0 auto; }
+
+/* 아래 판 */
+#sheet { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 20; display: flex; align-items: flex-end; }
+#sheet-body { width: 100%; max-height: 75vh; overflow-y: auto; background: var(--sheet); border-radius: 16px 16px 0 0;
+              padding: 16px 16px max(20px, env(safe-area-inset-bottom)); }
+#sheet h2 { font-size: 17px; margin: 0 0 12px; }
+.row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.row .k { flex: 1; }
+.row .v { min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+.row button { border: 1px solid var(--line); min-width: 44px; }
+.row button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.marks { list-style: none; margin: 0; padding: 0; }
+.marks li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.marks li .t { flex: 1; line-height: 1.4; }
+
+#toast { position: fixed; left: 12px; right: 12px; bottom: 80px; z-index: 30; background: #333; color: #fff;
+         border-radius: 10px; padding: 12px 14px; display: flex; gap: 10px; align-items: center; box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+#toast span { flex: 1; line-height: 1.4; }
+#toast button { color: #9cc4ff; font-weight: bold; }
+
+/* 위치를 잴 때만: 덮고 있는 것들은 찍히지 않게 */
+body.measuring #sheet, body.measuring .overlay, body.measuring #toast { pointer-events: none; }
