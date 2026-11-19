@@ -1,5 +1,5 @@
 // 앱 화면 파일을 휴대폰에 저장해 두어 인터넷이 없어도 열리게 한다(책 본문은 IndexedDB 에 따로 저장).
-const CACHE = "nv-shell-v2";
+const CACHE = "nv-shell-v3";
 const SHELL = ["./", "index.html", "style.css", "app.js", "config.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", (e) => {

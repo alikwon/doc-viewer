@@ -60,6 +60,14 @@ const idb = {
       t.oncomplete = () => res(); t.onerror = () => rej(t.error);
     });
   },
+  async del(k) {
+    const db = await this.open();
+    return new Promise((res, rej) => {
+      const t = db.transaction("texts", "readwrite");
+      t.objectStore("texts").delete(k);
+      t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+    });
+  },
   async keys() {
     const db = await this.open();
     return new Promise((res, rej) => {
@@ -210,6 +218,10 @@ function syncAll(reason) {
       setStatus("동기화 중...");
       const { file, lib } = await readLibrary();
       let changed = false;
+      for (const [bid, when] of Object.entries(state.deletes || {})) {   // 서재에서 지운 책
+        // 지운 뒤에 다른 기기에서 읽었으면(그쪽이 더 나중) 남긴다
+        if (lib.books[bid] && (lib.books[bid].updated || 0) <= when) { delete lib.books[bid]; changed = true; }
+      }
       for (const [bid, info] of Object.entries(state.adds || {})) {      // 휴대폰에서 먼저 연 책
         if (!lib.books[bid]) {
           const st = state.books[bid] || {};
@@ -238,6 +250,7 @@ function syncAll(reason) {
       }
       if (changed) await writeLibrary(file, lib);
       state.adds = {};
+      state.deletes = {};
       for (const st of Object.values(state.books)) st.dirty = false;
       state.lib = lib; state.lastSync = now(); saveState();
       setStatus("");
@@ -316,11 +329,71 @@ async function renderLibrary() {
     const p = document.createElement("div");
     p.className = "p";
     p.textContent = (Math.round(it.pos * 1000 / Math.max(1, it.e.chars)) / 10).toFixed(1) + "%";
-    li.append(left, p);
+    const more = document.createElement("button");
+    more.className = "icon more";
+    more.textContent = "⋮";
+    more.title = "지우기";
+    more.addEventListener("click", (ev) => { ev.stopPropagation(); bookMenu(it.bid); });
+    li.append(left, p, more);
     li.addEventListener("click", () => openBook(it.bid));
+    li.addEventListener("contextmenu", (ev) => { ev.preventDefault(); bookMenu(it.bid); });   // 길게 누르기
     ul.append(li);
   }
   $("#empty").hidden = items.length > 0;
+}
+
+/** 책 하나 지우기: 이 휴대폰의 파일만 / 서재에서(드라이브의 위치·북마크까지) */
+function bookMenu(bid) {
+  const e = (state.lib?.books || {})[bid];
+  if (!e) return;
+  sheetKind = "book";
+  const body = $("#sheet-body");
+  body.textContent = "";
+  const h = document.createElement("h2");
+  h.textContent = e.title.replace(/\.txt$/i, "");
+  body.append(h);
+  const add = (label, note, fn, danger) => {
+    const b = document.createElement("button");
+    b.className = "wide" + (danger ? " danger" : "");
+    b.textContent = label;
+    const n = document.createElement("div");
+    n.className = "muted small";
+    n.textContent = note;
+    b.append(n);
+    b.addEventListener("click", fn);
+    body.append(b);
+  };
+  if (cachedIds.has(bid)) {
+    add("휴대폰에 저장된 파일만 지우기", "목록·읽던 위치는 남아요. 다시 열 때 파일을 한 번 더 고르면 돼요.", async () => {
+      try { await idb.del(bid); } catch { /* 이미 없음 */ }
+      closeSheet();
+      toast("휴대폰에 저장된 파일을 지웠어요");
+      renderLibrary();
+    });
+  }
+  add("서재에서 지우기", "목록·읽던 위치·북마크를 PC 쪽까지 지워요. (PC에서 이 txt를 다시 열면 새로 생겨요)", () => {
+    if (!confirm(`'${h.textContent}'을(를) 서재에서 지울까요?\n읽던 위치와 북마크도 지워져요.`)) return;
+    removeBook(bid);
+    closeSheet();
+    toast("서재에서 지웠어요");
+  }, true);
+  const cancel = document.createElement("button");
+  cancel.className = "wide";
+  cancel.textContent = "취소";
+  cancel.addEventListener("click", closeSheet);
+  body.append(cancel);
+  $("#sheet").hidden = false;
+}
+
+async function removeBook(bid) {
+  delete state.lib.books[bid];
+  delete state.books[bid];
+  if (state.adds) delete state.adds[bid];
+  state.deletes = Object.assign(state.deletes || {}, { [bid]: now() });
+  saveState();
+  try { await idb.del(bid); } catch { /* 이미 없음 */ }
+  renderLibrary();
+  if (tokenValid()) syncAll("delete");
 }
 
 function showAccount() {
@@ -791,7 +864,8 @@ setInterval(() => { if (document.visibilityState === "visible" && tokenValid()) 
 
 // 시험·문제 확인용
 window.NV = { syncAll, topOffset, scrollToOffset, state: () => state, cur: () => cur, page, style: () => style,
-              show: () => syncAll("show").then(applyPulled), restoring: () => restoring, bookIdOf, decodeBytes };
+              show: () => syncAll("show").then(applyPulled), restoring: () => restoring, bookIdOf, decodeBytes,
+              removeBook };
 
 applyStyle();
 showAccount();
